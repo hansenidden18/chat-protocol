@@ -1,117 +1,101 @@
-import asyncore
-import json
+from socket import *
 import socket
 import threading
-import traceback
+import time
+import sys
+import json
+import logging
+import os
+from chat import Chat
 
-from env import Env
-from handlers import AuthHandler
-from handlers import CoreHandler
-from session import Session, SessionManager
+from session import Manager, Session
+from handler import AuthHandler, CoreHandler
 
+SERVER_IP=os.getenv('SERVER_IP') or "0.0.0.0"
+SERVER_PORT=os.getenv('SERVER_PORT') or "8889"
 
-class Server(asyncore.dispatcher):
-    def __init__(self):
-        super().__init__()
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.set_reuse_addr()
-        self.bind((Env.server_host, Env.server_port))
-        self.listen(5)
-        print('Server on')
+chatserver = Chat()
 
-    def handle_accept(self):
-        conn, address = self.accept()
-        print('new client > ' + str(address))
+class ProcessTheClient(threading.Thread):
+     def __init__(self, connection, address):
+          self.connection = connection
+          self.address = address
+          self.current = None
+          self.next = None
+          self.session = Session()
+          self.session.connect(self.connection)
+          threading.Thread.__init__(self)
 
-        broker = RequestBroker(conn, address)
-        broker.push_back_handler(AuthHandler.get_instance())
-        broker.push_back_handler(CoreHandler.get_instance())
-        broker.start()
+     def push_back(self, handle):
+          if self.current is None:
+               self.current = handler
+               self.next = handler
+          else:
+               self.next.handle_next(handler)
+               self.next = handler
 
+     def run(self):
+          #rcv=""
+          while True:
+               try:
+                    data = self.connection.recv(1024)
+                    request = json.loads(data.decode())
+                    print(request)
+                    if self.current is not None:
+                         self.current.handle(self.session, request)
+               except BaseException as e:
+                    try:
+                         self.session.send({
+                              'To': None,
+                              'status': 'ERROR',
+                              'message': 'Internal Server Error'
+                         })
+                    except:
+                         Manager.del_sesion(self.session)
+                         self.connection.close()
 
-class RequestBroker(threading.Thread):
+               '''
+               if data:
+                    d = data.decode()
+                    rcv=rcv+d
+                    if rcv[-2:]=='\r\n':
+                         #end of command, proses string
+                         logging.warning("data dari client: {}" . format(rcv))
+                         hasil = json.dumps(chatserver.proses(rcv))
+                         hasil=hasil+"\r\n\r\n"
+                         logging.warning("balas ke  client: {}" . format(hasil))
+                         self.connection.sendall(hasil.encode())
+                         rcv=""
+               else:
+                    break
+               '''
 
-    def __init__(self, connection: socket.socket, address):
-        super().__init__()
-        self.connection = connection
-        self.address = address
-        self.handler_head = None
-        self.handler_tail = None
-        self.session = Session()
-        self.session.set_connection(self.connection)
+class Server(threading.Thread):
+     def __init__(self):
+          self.the_clients = []
+          self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          self.my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+          threading.Thread.__init__(self)
 
-    def push_back_handler(self, handler):
-        if self.handler_head is None:
-            self.handler_head = handler
-            self.handler_tail = handler
-        else:
-            self.handler_tail.set_next_handler(handler)
-            self.handler_tail = handler
-
-    def run(self):
+     def run(self):
+        self.my_socket.bind((SERVER_IP,int(SERVER_PORT)))
+        self.my_socket.listen(1)
         while True:
-            try:
-                data = self.connection.recv(1024)
-                request = json.loads(data.decode('utf-8'))
-                print(request)
-                if self.handler_head is not None:
-                    self.handler_head.handle(self.session, request)
-            except BaseException as e:
-                traceback.print_exc()
-                try:
-                    self.session.send_response({
-                        'FOR': None,
-                        'status': 'failed',
-                        'message': 'internal server error'
-                    })
-                except:
-                    # unregis jika client terputus
-                    SessionManager.del_from_list(self.session)
-                    self.connection.close()
-                    return
+               self.connection, self.client_address = self.my_socket.accept()
+               logging.warning("Incoming client > {}" . format(self.client_address))
+               
+               clt = ProcessTheClient(self.connection, self.client_address)
+               clt.push_back(AuthHandler.get_instance())
+               clt.push_back(CoreHandler.get_instance())
+               clt.start()
+               self.the_clients.append(clt)
+     
 
-# class RequestBroker(asyncore.dispatcher_with_send):
-#
-#     def __init__(self, connection, address):
-#         super().__init__(connection)
-#         self.connection = connection
-#         self.address = address
-#         self.handler_head = None
-#         self.handler_tail = None
-#         self.session = Session()
-#         self.session.set_connection(self.connection)
-#
-#     def push_back_handler(self, handler):
-#         if self.handler_head is None:
-#             self.handler_head = handler
-#             self.handler_tail = handler
-#         else:
-#             self.handler_tail.set_next_handler(handler)
-#             self.handler_tail = handler
-#
-#     def handle_read(self):
-#         data = self.connection.recv(1024)
-#         request = json.loads(data.decode('utf-8'))
-#         print(request)
-#         try:
-#             if self.handler_head is not None:
-#                 self.handler_head.handle(self.session, request)
-#         except BaseException as e:
-#             traceback.print_exc()
-#             raise e
-#
-#     def handle_error(self):
-#         try:
-#             self.session.send_response({
-#                 'FOR': None,
-#                 'status': 'failed',
-#                 'message': 'internal server error'
-#             })
-#         except:
-#             SessionManager.del_from_list(self.session)
-#             self.close()
-#
+def main():
+     svr = Server()
+     svr.start()
 
-if __name__ == "__main__":
-    Server()
-    asyncore.loop()
+if __name__=="__main__":
+     print("Server is running.....")
+     main()
+

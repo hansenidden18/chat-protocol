@@ -30,7 +30,7 @@ class AuthActivity(AbstractActivity):
 
         request = dict()
         if args[0] == 'login':
-            request['COMMAND'] = 'AUTH-LOGIN'
+            request['command'] = 'auth login'
             request['username'] = args[1]
             request['password'] = args[2]
 
@@ -38,15 +38,15 @@ class AuthActivity(AbstractActivity):
             self.set_username(args[1])
 
         elif args[0] == 'register':
-            request['COMMAND'] = 'AUTH-REGISTER'
+            request['command'] = 'auth register'
             request['username'] = args[1]
             request['password'] = args[2]
-            request['password-confirm'] = args[3]
+            request['confirm_password'] = args[3]
 
             self.send_request(request)
 
         elif args[0] == 'logout':
-            request['COMMAND'] = 'AUTH-LOGOUT'
+            request['command'] = 'auth logout'
 
             self.send_request(request)
 
@@ -58,16 +58,16 @@ class AuthActivity(AbstractActivity):
 
     def response_handler(self, response, is_json):
         if is_json:
-            if response['FOR'] == 'AUTH-LOGIN':
+            if response['To'] == 'auth login':
                 print(response['message'])
-                if response['status'] == 'success':
+                if response['status'] == 'Success':
                     self.set_token(response['token'])
                     next_activity = MainMenuActivity.get_instance(self.connection, self.activity_container)
                     next_activity.set_from_activity(self)
                     self.move_activity(next_activity)
-            elif response['FOR'] == 'AUTH-LOGOUT':
+            elif response['To'] == 'auth logout':
                 print(response['message'])
-                if response['status'] == 'success':
+                if response['status'] == 'Success':
                     self.set_token(None)
             else:
                 print(response['message'])
