@@ -1,4 +1,5 @@
 from controller import BaseController
+import entity
 from entity import User
 from model import UserModel
 from sqlalchemy import select
@@ -6,15 +7,15 @@ from sqlalchemy import select
 class UserController(BaseController):
     instance = None
 
-    @staticmethod
-    def get_instance():
-        if UserRepository.instance is None:
-            UserRepository.instance = UserRepository()
-        return UserRepository.instance
-    
     def __init__(self):
         super().__init__('user')
-        self.db = db_session()
+        self.db = BaseController.db_session(self)
+
+    @staticmethod
+    def get_instance():
+        if UserController.instance is None:
+            UserController.instance = UserController()
+        return UserController.instance
     
     def get_username(self, username):
         data = self.db.execute(select(UserModel).where(UserModel.username == username)).scalar()
@@ -38,7 +39,7 @@ class UserController(BaseController):
         else:
             return []
     
-    def insert(self, obj: entity.Entity):
+    def insert(self, obj: entity.BaseEntity):
         if obj.id is None:
             user = UserModel()
             user.name = obj.name
@@ -65,4 +66,4 @@ class UserController(BaseController):
         data.groups = group
 
         self.db.add(data)
-        db.commit()
+        self.db.commit()

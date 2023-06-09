@@ -116,7 +116,7 @@ class FileService:
 
         session.send(message)
 
-    def __send_file_handle(self, session: Session, request: dict) -> FileEntity:
+    def __send_file_handle(self, session: Session, request: dict) -> File:
 
         unique_code = str(uuid.uuid4())[1:7]
         file_path = 'storage/' + unique_code + '-' + request['file_name']

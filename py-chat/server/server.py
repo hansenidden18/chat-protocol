@@ -26,7 +26,7 @@ class ProcessTheClient(threading.Thread):
           self.session.connect(self.connection)
           threading.Thread.__init__(self)
 
-     def push_back(self, handle):
+     def push_back(self, handler):
           if self.current is None:
                self.current = handler
                self.next = handler

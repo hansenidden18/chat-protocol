@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 
 class BaseController:
     engine = None
-    def __init__(self):
+    def __init__(self, entity_name):
         
-        if engine is None:
+        if BaseController.engine is None:
             self.engine = create_engine("postgresql+psycopg2://posgres:user@postgres:5432/python_docker", future=True)
-        #self.db = Session(self.engine)
+        self.db = Session(self.engine)
     
     def db_session(self):
-        return Session(engine)
+        return Session(BaseController.engine)
     
 

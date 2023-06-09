@@ -27,7 +27,7 @@ class ActivityContainer(threading.Thread):
         while True:
             recv = None
             try:
-                recv = self.activity.get_connection().recv(1024).decode('utf-8')
+                recv = self.activity.get_connection().recv(1024).decode('')
                 if recv[0] == '{':
                     while True:
                         if recv[-1] == '}':

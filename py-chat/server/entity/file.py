@@ -1,6 +1,6 @@
-from entity import Entity
+from entity import BaseEntity
 
-class File(Entity):
+class File(BaseEntity):
     def __init__(self):
         super().__init__()
         self.owner = None

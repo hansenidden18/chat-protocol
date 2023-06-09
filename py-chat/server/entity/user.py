@@ -1,6 +1,6 @@
-from entity import Entity
+from entity import BaseEntity
 
-class User(Entity):
+class User(BaseEntity):
     def __init__(self):
         super().__init__()
         self.username = None

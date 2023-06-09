@@ -1,10 +1,17 @@
 from handler import BaseHandler
-from services import *
+from service import *
 
 from session import Session
 
 
-class CoreHandler(AbstractHandler):
+class CoreHandler(BaseHandler):
+    instance = None
+
+    @staticmethod
+    def get_instance():
+        if CoreHandler.instance is None:
+            CoreHandler.instance = CoreHandler()
+        return CoreHandler.instance
 
     def __init__(self):
         super().__init__()
@@ -20,4 +27,4 @@ class CoreHandler(AbstractHandler):
         try:
             self.services[commands[0]].handle_request(session, request, commands[1])
         except Exception as e:
-            continue
+            pass

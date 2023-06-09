@@ -40,15 +40,15 @@ class AbstractActivity(object):
     def send_request(self, request):
         if isinstance(request, dict):
             request['token'] = AbstractActivity.token
-            self.connection.sendall(json.dumps(request).encode('utf-8'))
+            self.connection.sendall(json.dumps(request).encode())
         else:
-            self.connection.sendall(request.encode('utf-8'))
+            self.connection.sendall(request.encode())
 
     def get_response(self):
-        return json.loads(self.connection.recv(1024).decode('utf-8'))
+        return json.loads(self.connection.recv(1024).decode())
 
     def get_response_bytes(self):
-        return self.connection.recv(1024).decode('utf-8')
+        return self.connection.recv(1024).decode()
 
     def move_activity(self, target_activity):
         if self.activity_container is not None:
@@ -62,7 +62,7 @@ class AbstractActivity(object):
 
     def response_handler(self, response, is_json):
         if is_json:
-            if response['FOR'] == 'NOTIF':
+            if response['To'] == 'notif':
                 if 'from_group' in response.keys():
                     print('[New Message from '+response['from_user']+' ('+response['from_group']+')]:', response['text'])
                 else:

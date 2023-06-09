@@ -1,6 +1,6 @@
-from entity import Entity
+from entity import BaseEntity
 
-class Group(Entity):
+class Group(BaseEntity):
     def __init__(self):
         self.name = None
         self.code = None

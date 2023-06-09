@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Enum, ForeignKey, Integer, String
 from sqlalchemy.types import JSON
 from sqlalchemy.orm import relationship
+from sqlalchemy.schema import FetchedValue
 
 class GroupModel():
     __tablename__ = 'group'

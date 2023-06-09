@@ -1,19 +1,21 @@
-from entity import Entity, Group
+import entity
+from entity import BaseEntity, Group
 from model import GroupModel
 from controller import BaseController
+from sqlalchemy import select
 
 class GroupController(BaseController):
     instance = None
 
     @staticmethod
     def get_instance():
-        if GroupRepository.instance is None:
-            GroupRepository.instance = GroupRepository()
-        return GroupRepository.instance
+        if GroupController.instance is None:
+            GroupController.instance = GroupController()
+        return GroupController.instance
 
     def __init__(self):
         super().__init__('groups')
-        self.db = db_session()
+        self.db = BaseController.db_session(self)
 
     def get_code(self, code: str) -> Group:
         data = self.db.execute(select(GroupModel).where(GroupModel.code == code)).scalar()
@@ -43,7 +45,7 @@ class GroupController(BaseController):
             return group
         return None
     
-    def insert(self, obj: entity.Entity):
+    def insert(self, obj: entity.BaseEntity):
         if obj.id is None:
             group = GroupModel()
             group.name = obj.name

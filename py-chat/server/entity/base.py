@@ -1,4 +1,4 @@
-class Entity(object):
+class BaseEntity(object):
     def __init__(self):
         self.id = None
     
