@@ -21,6 +21,12 @@ class ChatClient:
                 username=j[1].strip()
                 password=j[2].strip()
                 return self.login(username,password)
+            if (command=='register'):
+                username=j[1].strip()
+                password=j[2].strip()
+                nama=j[3].strip()
+                negara=j[4].strip()
+                return self.register(username, password, nama, negara)
             elif (command=='addrealm'):
                 realmid = j[1].strip()
                 realm_address = j[2].strip()
@@ -75,6 +81,10 @@ class ChatClient:
             elif (command == 'getrealminbox'):
                 realmid = j[1].strip()
                 return self.realm_inbox(realmid)
+            elif (command=='logout'):
+                return self.logout()
+            elif (command=='info'):
+                return self.info()
             else:
                 return "*Maaf, command tidak benar"
         except IndexError:
@@ -102,6 +112,15 @@ class ChatClient:
         if result['status']=='OK':
             self.tokenid=result['tokenid']
             return "username {} logged in, token {} " .format(username,self.tokenid)
+        else:
+            return "Error, {}" . format(result['message'])
+    
+    def register(self,username,password, nama, negara):
+        string="register {} {} {} {}\r\n" . format(username,password, nama, negara)
+        result = self.sendstring(string)
+        if result['status']=='OK':
+            self.tokenid=result['tokenid']
+            return "username {} register in, token {} " .format(username,self.tokenid)
         else:
             return "Error, {}" . format(result['message'])
 
@@ -163,7 +182,7 @@ class ChatClient:
         with open(filepath, 'rb') as file:
             file_content = file.read()
             encoded_content = base64.b64encode(file_content)  # Decode byte-string to UTF-8 string
-        string="sendfilerealm {} {} {} {}\r\n" . format(self.tokenid, realmid, usernameto, filepath, encoded_content)
+        string="sendfilerealm {} {} {} {} {}\r\n" . format(self.tokenid, realmid, usernameto, filepath, encoded_content)
         result = self.sendstring(string)
         if result['status']=='OK':
             return "File sent to realm {}".format(realmid)
@@ -192,7 +211,7 @@ class ChatClient:
             file_content = file.read()
             encoded_content = base64.b64encode(file_content)  # Decode byte-string to UTF-8 string
 
-        string="sendgroupfile {} {} {} \r\n" . format(self.tokenid,usernames_to,filepath, encoded_content)
+        string="sendgroupfile {} {} {} {}\r\n" . format(self.tokenid,usernames_to,filepath, encoded_content)
 
         result = self.sendstring(string)
         if result['status']=='OK':
@@ -221,8 +240,8 @@ class ChatClient:
         with open(filepath, 'rb') as file:
             file_content = file.read()
             encoded_content = base64.b64encode(file_content)  # Decode byte-string to UTF-8 string
-        string="sendgroupfilerealm {} {} {} {} \r\n" . format(self.tokenid, realmid, usernames_to, filepath, encoded_content)
- 
+        string="sendgroupfilerealm {} {} {} {} {}\r\n" . format(self.tokenid, realmid, usernames_to, filepath, encoded_content)
+
         result = self.sendstring(string)
         if result['status']=='OK':
             return "file sent to group {} in realm {}" .format(usernames_to, realmid)
@@ -250,6 +269,23 @@ class ChatClient:
             return "Message received from realm {}: {}".format(realmid, result['messages'])
         else:
             return "Error, {}".format(result['message'])
+    
+    def logout(self):
+        string="logout \r\n"
+        result = self.sendstring(string)
+        if result['status']=='OK':
+            self.tokenid=""
+            return "Logout Berhasil"
+        else:
+            return "Error, {}" . format(result['message'])
+
+    def info(self):
+        string="info {} \r\n"
+        result = self.sendstring(string)
+        list_user_aktif="User yang Aktif:\n"
+        if result['status']=='OK':
+            list_user_aktif += f"{result['message']}"
+        return list_user_aktif
 
 if __name__=="__main__":
     cc = ChatClient()
@@ -259,14 +295,19 @@ if __name__=="__main__":
         print("List User: " + str(c.users.keys()) + " dan Passwordnya: " + str(c.users['messi']['password']) + ", " + str(c.users['henderson']['password']) + ", " + str(c.users['lineker']['password']))
         print("""Command:\n
         1. Login: auth [username] [password]\n
-        2. Menambah realm: addrealm [nama_realm] [address] [port]\n
-        3. Mengirim pesan: send [username to] [message]\n
-        4. Mengirim pesan ke realm: sendrealm [name_realm] [username to] [message]\n
-        5. Mengirim pesan ke group: sendgroup [usernames to] [message]\n
-        6. Mengirim pesan ke group realm: sendgrouprealm [name_realm] [usernames to] [message]\n
-        7. Melihat pesan: inbox\n
-        8. Melihat pesan realm: realminbox [nama_realm]\n
-        9. Logout: logout\n
-        10. Melihat user yang aktif: info\n""")
+        2. Register: register [username] [password] [nama (gunakan "_" untuk seperator) ] [negara]\n
+        3. Menambah realm: addrealm [nama_realm] [address] [port]\n
+        4. Mengirim pesan: send [username to] [message]\n
+        5. Mengirim file: senfile [username to] [filename]\n
+        6. Mengirim pesan ke realm: sendrealm [name_realm] [username to] [message]\n
+        7. Mengirim file ke realm: sendfilerealm [name_realm] [username to] [filename]\n
+        8. Mengirim pesan ke group: sendgroup [usernames to] [message]\n
+        9. Mengirim file ke group: sendgroupfile [usernames to] [filename]\n
+        10. Mengirim pesan ke group realm: sendgrouprealm [name_realm] [usernames to] [message]\n
+        11. Mengirim file ke group realm: sendgroupfilerealm [name_realm] [usernames to] [filename]\n
+        12. Melihat pesan: inbox\n
+        13. Melihat pesan realm: realminbox [nama_realm]\n
+        14. Logout: logout\n
+        15. Melihat user yang aktif: info\n""")
         cmdline = input("Command {}:" . format(cc.tokenid))
         print(cc.proses(cmdline))

@@ -62,6 +62,14 @@ class Chat:
                 logging.warning("AUTH: auth {} {}" . format(username,password))
                 return self.autentikasi_user(username,password)
             
+            if (command=='register'):
+                username=j[1].strip()
+                password=j[2].strip()
+                nama=j[3].strip()
+                negara=j[4].strip()
+                logging.warning("REGISTER: register {} {}" . format(username,password))
+                return self.register_user(username,password, nama, negara)
+            
 #   ===================== Komunikasi dalam satu server =====================            
             elif (command=='send'):
                 sessionid = j[1].strip()
@@ -202,6 +210,10 @@ class Chat:
                 username = j[2].strip()
                 logging.warning("GETREALMCHAT: from realm {}".format(realmid))
                 return self.get_realm_chat(realmid, username)
+            elif (command=='logout'):
+                return  self.logout()
+            elif (command=='info'):
+                return self.info()
             else:
                 print(command)
                 return {'status': 'ERROR', 'message': '**Protocol Tidak Benar'}
@@ -215,6 +227,21 @@ class Chat:
             return { 'status': 'ERROR', 'message': 'User Tidak Ada' }
         if (self.users[username]['password']!= password):
             return { 'status': 'ERROR', 'message': 'Password Salah' }
+        tokenid = str(uuid.uuid4()) 
+        self.sessions[tokenid]={ 'username': username, 'userdetail':self.users[username]}
+        return { 'status': 'OK', 'tokenid': tokenid }
+    
+    def register_user(self,username, password, nama, negara):
+        if (username in self.users):
+            return { 'status': 'ERROR', 'message': 'User Sudah Ada' }
+        nama = nama.replace("_", " ")
+        self.users[username]={ 
+            'nama': nama,
+            'negara': negara,
+            'password': password,
+            'incoming': {},
+            'outgoing': {}
+            }
         tokenid = str(uuid.uuid4()) 
         self.sessions[tokenid]={ 'username': username, 'userdetail':self.users[username]}
         return { 'status': 'OK', 'tokenid': tokenid }
@@ -464,8 +491,6 @@ class Chat:
         return {'status': 'OK', 'message': 'File Sent to Realm'}
     
     def recv_file_realm(self, sessionid, realm_id, username_from, username_dest, filepath, encoded_file, data):
-        if (sessionid not in self.sessions):
-            return {'status': 'ERROR', 'message': 'Session Tidak Ditemukan'}
         if (realm_id not in self.realms):
             return {'status': 'ERROR', 'message': 'Realm Tidak Ditemukan'}
         s_fr = self.get_user(username_from)
@@ -574,8 +599,6 @@ class Chat:
         return {'status': 'OK', 'message': 'Message Sent to Group in Realm'}
 
     def recv_group_file_realm(self, sessionid, realm_id, username_from, usernames_to, filepath, encoded_file, data):
-        if (sessionid not in self.sessions):
-            return {'status': 'ERROR', 'message': 'Session Tidak Ditemukan'}
         if (realm_id not in self.realms):
             return {'status': 'ERROR', 'message': 'Realm Tidak Ditemukan'}
         s_fr = self.get_user(username_from)
@@ -633,6 +656,14 @@ class Chat:
         while not self.realms[realmid].chat[s_fr['nama']].empty():
             msgs.append(self.realms[realmid].chat[s_fr['nama']].get_nowait())
         return {'status': 'OK', 'messages': msgs}
+    def logout(self):
+        if (bool(self.sessions) == True):
+            self.sessions.clear()
+            return {'status': 'OK'}
+        else:
+            return {'status': 'ERROR', 'message': 'Belum Login'}
+    def info(self):
+        return {'status': 'OK', 'message': self.sessions}
 
 if __name__=="__main__":
     j = Chat()
